@@ -21,16 +21,6 @@ def index():
     return "<h1>Backend is active! 🚀</h1><p>This is the API server. Please open the Frontend at <a href='http://localhost:5173'>http://localhost:5173</a> to use the app.</p>"
 
 
-@app.route('/', methods=['GET'])
-def index():
-    return "<h1>Backend is active! 🚀</h1><p>This is the API server. Please open the Frontend at <a href='http://localhost:5173'>http://localhost:5173</a> to use the app.</p>"
-
-
-@app.route('/', methods=['GET'])
-def index():
-    return "<h1>Backend is active! 🚀</h1><p>This is the API server. Please open the Frontend at <a href='http://localhost:5173'>http://localhost:5173</a> to use the app.</p>"
-
-
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
