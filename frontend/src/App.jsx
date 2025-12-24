@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, BarChart3, Sparkles } from 'lucide-react'
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, BarChart3, Sparkles, Download } from 'lucide-react'
+import Visualizations from './Visualizations'
+import ReactMarkdown from 'react-markdown'
 
 function App() {
     const [file, setFile] = useState(null)
@@ -31,12 +33,16 @@ function App() {
             const res = await axios.post('http://127.0.0.1:5000/api/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
+            console.log("Upload response:", res.data)
+
             setStats(res.data.stats)
             setReportType(res.data.report_type)
             setStatus('analyzed')
         } catch (err) {
             console.error(err)
-            setErrorMsg(err.response?.data?.error || "Upload failed")
+            const errMsg = err.response?.data?.error || "Upload failed"
+            alert("Upload Error: " + errMsg)
+            setErrorMsg(errMsg)
             setStatus('error')
         }
     }
@@ -52,18 +58,25 @@ function App() {
             setReport(res.data.report)
             setStatus('done')
         } catch (err) {
-            console.error(err)
-            setErrorMsg(err.response?.data?.error || "Generation failed")
+            console.error("Generate Error:", err)
+            const msg = err.response?.data?.error || "Generation failed"
+            setErrorMsg(msg)
+            alert("Error: " + msg)
             setStatus('error')
         }
     }
 
+    // Native browser print for vector-quality PDF
+    const handleDownloadPDF = () => {
+        window.print();
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 text-gray-800 p-6 md:p-12 font-sans selection:bg-purple-200">
-            <div className="max-w-5xl mx-auto space-y-10 animate-fade-in">
+            <div className="max-w-5xl mx-auto space-y-10 animate-fade-in print:max-w-none print:p-0">
 
-                {/* Header */}
-                <header className="text-center space-y-4">
+                {/* Header - Hidden when printing */}
+                <header className="text-center space-y-4 print:hidden">
                     <div className="inline-flex items-center justify-center p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-sm mb-4">
                         <Sparkles className="w-6 h-6 text-purple-600 mr-2" />
                         <span className="text-sm font-semibold text-purple-700 tracking-wide uppercase">AI-Powered Analytics</span>
@@ -76,10 +89,10 @@ function App() {
                     </p>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start print:block">
 
-                    {/* Left Column: Upload & Controls */}
-                    <div className="lg:col-span-1 space-y-6">
+                    {/* Left Column: Upload & Controls - Hidden when printing */}
+                    <div className="lg:col-span-1 space-y-6 print:hidden">
                         <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-white/20 transition-all hover:shadow-2xl">
                             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                                 <Upload className="w-5 h-5 text-purple-600" />
@@ -156,60 +169,75 @@ function App() {
                     </div>
 
                     {/* Right Column: Results */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-6 print:w-full print:col-span-3">
 
-                        {/* Empty State */}
+                        {/* Empty State - Hidden when printing */}
                         {(status === 'idle' || status === 'uploading') && !stats && (
-                            <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-md rounded-3xl border-2 border-dashed border-white/50 text-gray-400 p-12 text-center">
+                            <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-md rounded-3xl border-2 border-dashed border-white/50 text-gray-400 p-12 text-center print:hidden">
                                 <BarChart3 className="w-16 h-16 mb-4 opacity-50" />
                                 <h3 className="text-xl font-semibold mb-2">Ready to Visualize</h3>
                                 <p className="max-w-xs">Upload your sales or performance data to get started with AI-driven insights.</p>
                             </div>
                         )}
 
-                        {/* Stats Grid */}
+                        {/* Stats Grid - Hidden when printing */}
                         {stats && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up">
-                                <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rows</p>
-                                    <p className="text-2xl font-bold text-gray-800">{stats.basic_info.rows}</p>
-                                </div>
-                                <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cols</p>
-                                    <p className="text-2xl font-bold text-gray-800">{stats.basic_info.columns.length}</p>
-                                </div>
-                                <div className="col-span-2 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Type</p>
-                                        <p className="text-lg font-bold text-blue-900">{reportType}</p>
+                            <div className="print:hidden">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up">
+                                    <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rows</p>
+                                        <p className="text-2xl font-bold text-gray-800">{stats.basic_info.rows}</p>
                                     </div>
-                                    <CheckCircle className="w-6 h-6 text-blue-400" />
+                                    <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cols</p>
+                                        <p className="text-2xl font-bold text-gray-800">{stats.basic_info.columns.length}</p>
+                                    </div>
+                                    <div className="col-span-2 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Type</p>
+                                            <p className="text-lg font-bold text-blue-900">{reportType}</p>
+                                        </div>
+                                        <CheckCircle className="w-6 h-6 text-blue-400" />
+                                    </div>
                                 </div>
+
+                                <Visualizations stats={stats} />
                             </div>
                         )}
 
-                        {/* Report Card */}
+                        {/* Report Card - Full width when printing */}
                         {(status === 'done' || status === 'generating') && (
-                            <div className="bg-white p-8 rounded-3xl shadow-xl border border-purple-50 min-h-[500px] relative animate-fade-in group hover:shadow-2xl transition-all duration-500">
-                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-t-3xl"></div>
-                                <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                                        <FileText className="text-pink-500" />
+                            <div id="report-content" className="bg-white p-8 rounded-3xl shadow-xl border border-purple-50 min-h-[500px] relative animate-fade-in group hover:shadow-2xl transition-all duration-500 print:shadow-none print:border-none print:p-0">
+                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-t-3xl print:hidden"></div>
+                                <div className="flex items-center justify-between mb-8 print:mb-4 print:hidden">
+                                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 print:text-black">
+                                        <FileText className="text-pink-500 print:text-black" />
                                         Executive Summary
                                     </h2>
-                                    {status === 'done' && <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Completed</span>}
+                                    <div id="report-buttons" className="flex gap-2 print:hidden">
+                                        {status === 'done' && (
+                                            <button
+                                                onClick={handleDownloadPDF}
+                                                className="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors flex items-center gap-2"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Download PDF
+                                            </button>
+                                        )}
+                                        {status === 'done' && <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center">Completed</span>}
+                                    </div>
                                 </div>
 
                                 {status === 'generating' ? (
-                                    <div className="space-y-4 animate-pulse">
+                                    <div className="space-y-4 animate-pulse print:hidden">
                                         <div className="h-4 bg-gray-100 rounded w-3/4"></div>
                                         <div className="h-4 bg-gray-100 rounded w-full"></div>
                                         <div className="h-4 bg-gray-100 rounded w-5/6"></div>
                                         <div className="h-32 bg-gray-50 rounded-xl mt-6"></div>
                                     </div>
                                 ) : (
-                                    <div className="prose prose-purple max-w-none text-gray-600 whitespace-pre-wrap leading-relaxed font-light text-lg">
-                                        {report}
+                                    <div className="prose prose-purple prose-lg max-w-none text-gray-800 leading-relaxed bg-white p-4 rounded-xl print:text-black print:p-0 print:prose-p:text-black print:prose-headings:text-black print:prose-strong:text-black print:prose-li:text-black print:max-w-full">
+                                        <ReactMarkdown>{report}</ReactMarkdown>
                                     </div>
                                 )}
                             </div>

@@ -6,7 +6,9 @@ import os
 from dotenv import load_dotenv
 
 # Load env variables
-load_dotenv()
+# Load env variables
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(dotenv_path)
 
 app = Flask(__name__)
 # Allow CORS for React app (usually runs on localhost:5173)
@@ -38,19 +40,40 @@ def upload_file():
     # 2. Ingestion & Analysis (Analyst)
     try:
         df = analyst.load_data(file)
-        stats = analyst.generate_summary(df)
-        report_type = brain.determine_report_type(df)
+        stats = analyst.generate_summary_v2(df)
         
         # Determine preview (first 5 rows)
         preview = df.head().to_dict(orient='records')
         
-        return jsonify({
+        # Robust Recursive Serialization Helper
+        import numpy as np
+        def safe_cleanup(obj):
+            if isinstance(obj, dict):
+                return {k: safe_cleanup(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [safe_cleanup(i) for i in obj]
+            if isinstance(obj, (np.integer, int)):
+                return int(obj)
+            if isinstance(obj, (np.floating, float)):
+                if np.isnan(obj) or np.isinf(obj):
+                    return None
+                return float(obj)
+            if pd.isna(obj): # Handle pandas NaT/NaN
+                return None
+            return obj
+
+        response_data = {
             "message": "File analyzed successfully",
-            "stats": stats,
-            "report_type": report_type,
-            "preview": preview
-        })
+            "stats": safe_cleanup(stats),
+            "report_type": brain.determine_report_type(df),
+            "preview": safe_cleanup(preview)
+        }
+
+        return jsonify(response_data)
     except Exception as e:
+        print(f"DEBUG: Upload Error: {e}") # DEBUG
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Error processing file: {str(e)}"}), 500
 
 @app.route('/api/generate', methods=['POST'])
@@ -64,9 +87,14 @@ def generate_report():
 
     # 3. Narrative Generation (Writer)
     try:
+        print(f"--> RECEIVED /api/generate request. Stats keys: {list(stats.keys())}") # DEBUG
         report = writer.generate_narrative(stats, instruction)
+        print(f"<-- REPORT GENERATED. Length: {len(report)}") # DEBUG
         return jsonify({"report": report})
     except Exception as e:
+        print(f"!!! SERVER ERROR in /api/generate: {e}") # DEBUG
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Error generating report: {str(e)}"}), 500
 
 if __name__ == '__main__':
