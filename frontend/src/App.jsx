@@ -2,12 +2,14 @@ import { useState } from 'react'
 import axios from 'axios'
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, BarChart3, Sparkles, Download } from 'lucide-react'
 import Visualizations from './Visualizations'
+import ChatInterface from './ChatInterface'
 import ReactMarkdown from 'react-markdown'
 
 function App() {
     const [file, setFile] = useState(null)
     const [status, setStatus] = useState('idle') // idle, uploading, analyzed, generating, done, error
     const [stats, setStats] = useState(null)
+    const [plots, setPlots] = useState([])
     const [report, setReport] = useState("")
     const [reportType, setReportType] = useState("")
     const [instruction, setInstruction] = useState("")
@@ -37,6 +39,7 @@ function App() {
 
             setStats(res.data.stats)
             setReportType(res.data.report_type)
+            setPlots(res.data.plots)
             setStatus('analyzed')
         } catch (err) {
             console.error(err)
@@ -102,7 +105,7 @@ function App() {
                             <div className="relative group cursor-pointer">
                                 <input
                                     type="file"
-                                    accept=".csv"
+                                    accept=".csv, .xlsx, .xls, .json"
                                     onChange={handleFileChange}
                                     className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
                                 />
@@ -111,7 +114,7 @@ function App() {
                                         <FileText className="w-8 h-8 transition-transform group-hover:scale-110" />
                                     </div>
                                     <p className="text-sm font-medium text-gray-700">{file ? file.name : "Click to browse"}</p>
-                                    <p className="text-xs text-gray-400 mt-1">.CSV files only</p>
+                                    <p className="text-xs text-gray-400 mt-1">CSV, Excel, or JSON</p>
                                 </div>
                             </div>
 
@@ -182,8 +185,8 @@ function App() {
 
                         {/* Stats Grid - Hidden when printing */}
                         {stats && (
-                            <div className="print:hidden">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up">
+                            <div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up print:hidden">
                                     <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rows</p>
                                         <p className="text-2xl font-bold text-gray-800">{stats.basic_info.rows}</p>
@@ -201,7 +204,7 @@ function App() {
                                     </div>
                                 </div>
 
-                                <Visualizations stats={stats} />
+                                {/* Visualizations are now embedded in the report */}
                             </div>
                         )}
 
@@ -212,7 +215,7 @@ function App() {
                                 <div className="flex items-center justify-between mb-8 print:mb-4 print:hidden">
                                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 print:text-black">
                                         <FileText className="text-pink-500 print:text-black" />
-                                        Executive Summary
+                                        Report
                                     </h2>
                                     <div id="report-buttons" className="flex gap-2 print:hidden">
                                         {status === 'done' && (
@@ -237,11 +240,63 @@ function App() {
                                     </div>
                                 ) : (
                                     <div className="prose prose-purple prose-lg max-w-none text-gray-800 leading-relaxed bg-white p-4 rounded-xl print:text-black print:p-0 print:prose-p:text-black print:prose-headings:text-black print:prose-strong:text-black print:prose-li:text-black print:max-w-full">
-                                        <ReactMarkdown>{report}</ReactMarkdown>
+                                        <ReactMarkdown
+                                            components={{
+                                                img: ({ node, ...props }) => (
+                                                    <img {...props} className="w-full h-auto rounded-xl shadow-md my-4 border border-gray-100" />
+                                                )
+                                            }}
+                                        >
+                                            {(() => {
+                                                if (!report || !plots) return report;
+                                                let injectedReport = report;
+
+                                                // Inject Correlation Plot
+                                                const corrPlot = plots.find(p => p.type === 'correlation');
+                                                if (corrPlot) {
+                                                    injectedReport = injectedReport.replace(
+                                                        /(##\s*3\.\s*Correlation)/i,
+                                                        `$1\n\n![Correlation Matrix](${corrPlot.url})\n\n`
+                                                    );
+                                                }
+
+                                                // Inject Distribution Plots (under Deep Dive)
+                                                const distPlots = plots.filter(p => p.type === 'distribution');
+                                                if (distPlots.length > 0) {
+                                                    const imgs = distPlots.map(p => `![${p.title}](${p.url})`).join('\n\n');
+                                                    injectedReport = injectedReport.replace(
+                                                        /(##\s*2\.\s*Deep Dive)/i,
+                                                        `$1\n\n${imgs}\n\n`
+                                                    );
+                                                }
+
+                                                // Inject Category Plots (under Strategic or end of Deep Dive)
+                                                const catPlots = plots.filter(p => p.type === 'category');
+                                                if (catPlots.length > 0) {
+                                                    const imgs = catPlots.map(p => `![${p.title}](${p.url})`).join('\n\n');
+                                                    // Try to put it after distributions or just append to Deep Dive
+                                                    // Let's append to Deep Dive to keep it together
+                                                    injectedReport = injectedReport.replace(
+                                                        /(##\s*2\.\s*Deep Dive)/i,
+                                                        `$1\n\n${imgs}\n\n`
+                                                    );
+                                                }
+
+                                                return injectedReport;
+                                            })()}
+                                        </ReactMarkdown>
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        {/* Chat Interface - Only show when we have stats/report */}
+                        {status === 'done' && stats && (
+                            <div className="print:hidden">
+                                <ChatInterface stats={stats} />
+                            </div>
+                        )}
+
                     </div>
                 </div>
             </div>

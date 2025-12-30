@@ -14,9 +14,27 @@ import {
 } from 'recharts';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-const Visualizations = ({ stats }) => {
+const Visualizations = ({ stats, plots }) => {
     if (!stats) return null;
 
+    // Use Plot URLs from backend if available
+    if (plots && plots.length > 0) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-slide-up">
+                {plots.map((url, index) => (
+                    <div key={index} className="bg-white p-4 rounded-3xl shadow-sm border border-purple-50 hover:shadow-md transition-shadow">
+                        <img
+                            src={url}
+                            alt={`Chart ${index + 1}`}
+                            className="w-full h-auto rounded-xl"
+                        />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // Fallback to Recharts (Interactive) if no static plots
     // 1. Prepare Correlation Data
     const correlationData = stats.correlation
         ? Object.entries(stats.correlation).map(([key, value]) => ({
@@ -25,18 +43,6 @@ const Visualizations = ({ stats }) => {
         }))
         : [];
 
-    // 2. Prepare Numeric Summary (Top 5 cols by variance or just all?)
-    // Let's take numeric stats and map them.
-    // Normalizing is hard without context, so we might just show "Means" normalized or just raw.
-    // A better chart might be "Min vs Average vs Max" for each column, but scales differ.
-    // Let's do a chart per column if < 4, else pick top ones? 
-    // Let's just do one combined chart for "Averages" but it might look weird if scales differ.
-    // Alternative: "Data Health" - visualization of missing vs present? (Rows)
-
-    // Let's stick to Correlation as it's the safest 'normalized' metric (-1 to 1).
-
-    // Let's also try to show "Distribution" via a custom composed chart for the first 3 numeric metrics
-    // showing min, mean, max.
     const numericKeys = Object.keys(stats.numeric_stats || {});
     const sampleNumericData = numericKeys.slice(0, 4).map(key => {
         const s = stats.numeric_stats[key];

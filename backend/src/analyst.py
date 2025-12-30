@@ -4,20 +4,41 @@ import sys
 
 def load_data(file):
     """
-    Loads CSV data into a Pandas DataFrame.
+    Loads CSV, Excel, or JSON data into a Pandas DataFrame.
     """
-    encodings = ['utf-8', 'latin-1', 'cp1252', 'ISO-8859-1']
+    filename = file.filename.lower()
     
-    for encoding in encodings:
-        try:
+    try:
+        if filename.endswith('.csv'):
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'ISO-8859-1']
+            for encoding in encodings:
+                try:
+                    file.seek(0)
+                    return pd.read_csv(file, encoding=encoding)
+                except UnicodeDecodeError:
+                    continue
             file.seek(0)
-            return pd.read_csv(file, encoding=encoding)
-        except UnicodeDecodeError:
-            continue
+            raise ValueError(f"Unable to decode CSV. Supported encodings: {encodings}")
             
-    # If all fail, raise error
-    file.seek(0)
-    raise ValueError(f"Unable to decode file. Supported encodings: {encodings}")
+        elif filename.endswith(('.xls', '.xlsx')):
+            file.seek(0)
+            return pd.read_excel(file)
+            
+        elif filename.endswith('.json'):
+            file.seek(0)
+            return pd.read_json(file)
+            
+        else:
+            # Fallback for unknown extensions, try CSV then Excel
+            try:
+                file.seek(0)
+                return pd.read_csv(file)
+            except:
+                file.seek(0)
+                return pd.read_excel(file)
+
+    except Exception as e:
+        raise ValueError(f"Failed to load file '{file.filename}': {str(e)}")
 
 def generate_summary_v2(df):
     """
@@ -63,6 +84,20 @@ def generate_summary_v2(df):
             except Exception as e:
                 print(f"DEBUG: Error processing col {col}: {e}", file=sys.stderr)
                 continue
+
+        # Categorical Analysis (New)
+        summary["categorical_stats"] = {}
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        print(f"DEBUG: Found categorical cols: {list(categorical_cols)}", file=sys.stderr)
+        
+        for col in categorical_cols:
+            try:
+                # Top 10 most frequent values
+                top_counts = df[col].value_counts().head(10).to_dict()
+                summary["categorical_stats"][col] = {k: int(v) for k, v in top_counts.items()}
+            except Exception as e:
+                 print(f"DEBUG: Error processing cat col {col}: {e}", file=sys.stderr)
+
 
         # Correlation Analysis
         if len(numeric_cols) > 1:

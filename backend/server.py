@@ -33,6 +33,7 @@ def upload_file():
         return jsonify({"error": "No selected file"}), 400
 
     # 1. Validation (Brain)
+    # 1. Validation (Brain)
     is_valid, message = brain.validate_file(file)
     if not is_valid:
         return jsonify({"error": message}), 400
@@ -44,6 +45,16 @@ def upload_file():
         
         # Determine preview (first 5 rows)
         preview = df.head().to_dict(orient='records')
+        
+        # 3. Static Plot Generation (Plotter)
+        from src import plotter
+        static_folder = os.path.join(app.root_path, 'static', 'plots')
+        plot_objects = plotter.generate_plots(df, static_folder)
+        # Convert filenames to URLs (and keep metadata)
+        plot_urls = []
+        for p in plot_objects:
+            p['url'] = f"http://127.0.0.1:5000/static/plots/{p['file']}"
+            plot_urls.append(p)
         
         # Robust Recursive Serialization Helper
         import numpy as np
@@ -66,7 +77,8 @@ def upload_file():
             "message": "File analyzed successfully",
             "stats": safe_cleanup(stats),
             "report_type": brain.determine_report_type(df),
-            "preview": safe_cleanup(preview)
+            "preview": safe_cleanup(preview),
+            "plots": plot_urls
         }
 
         return jsonify(response_data)
@@ -96,6 +108,21 @@ def generate_report():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Error generating report: {str(e)}"}), 500
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.json
+    stats = data.get('stats')
+    history = data.get('history', [])
+    
+    if not stats:
+        return jsonify({"error": "No dataframe stats context"}), 400
+        
+    try:
+        response_text = writer.chat_with_data(history, stats)
+        return jsonify({"response": response_text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
