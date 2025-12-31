@@ -13,9 +13,15 @@ def generate_narrative(summary_stats, instruction=""):
     try:
         genai.configure(api_key=api_key)
         
-        # Use a model that supports text generation (priority: 2.5 flash -> 2.0 flash -> pro latest)
-        # Based on available models: gemini-2.5-flash, gemini-2.0-flash, gemini-pro-latest
-        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-pro-latest']
+        # Priority: 2.0 Flash Exp -> 2.0 Flash -> 2.0 Flash Lite -> 2.5 Flash
+        # We are casting a wide net to find ANY model with remaining free quota.
+        models_to_try = [
+            'gemini-2.0-flash-exp', 
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-lite-preview-02-05',
+            'gemini-2.5-flash',
+            'gemini-flash-latest'
+        ]
         
         prompt = f"""
         You are a Top-Tier Data Analyst & Business Consultant.
@@ -67,6 +73,8 @@ def generate_narrative(summary_stats, instruction=""):
             except Exception as e:
                 print(f"DEBUG: Model {model_name} failed: {e}")
                 last_error = e
+                import time
+                time.sleep(1) # Brief pause to help with rate limits
                 continue
         
         return f"Error: All available Gemini models failed. Last error: {str(last_error)}. Please check your API key and quotas."
@@ -82,8 +90,12 @@ def chat_with_data(history, stats):
         return "Error: API Key missing."
 
     # List of models to try in order of preference/cost/speed
-    # Removed gemini-pro (404 deprecated)
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-pro-latest']
+    models_to_try = [
+        'gemini-2.0-flash-exp', 
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite-preview-02-05',
+        'gemini-2.5-flash'
+    ]
     
     last_error = None
     import time

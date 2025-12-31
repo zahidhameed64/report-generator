@@ -2,30 +2,59 @@ import pandas as pd
 
 def validate_file(file):
     """
-    Checks if the uploaded file is a valid CSV and not empty.
+    Checks if the uploaded file is valid and not empty.
+    Supports CSV, Excel, and JSON.
     Returns (bool, message).
     """
-    # Placeholder validation logic
-    encodings = ['utf-8', 'latin-1', 'cp1252', 'ISO-8859-1']
+    filename = file.filename.lower()
     
-    for encoding in encodings:
-        try:
-            file.seek(0)
-            df = pd.read_csv(file, encoding=encoding)
-            
-            if df.empty:
-                return False, "File is empty."
-            
-            # Reset pointer for next operations
-            file.seek(0)
-            return True, "File is valid."
-            
-        except UnicodeDecodeError:
-            continue
-        except Exception as e:
-            return False, f"Error reading file: {e}"
-            
-    return False, f"Unable to decode file. Supported encodings: {encodings}"
+    try:
+        if filename.endswith('.csv'):
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'ISO-8859-1']
+            for encoding in encodings:
+                try:
+                    file.seek(0)
+                    df = pd.read_csv(file, encoding=encoding)
+                    if df.empty:
+                        return False, "File is empty."
+                    file.seek(0)
+                    return True, "File is valid."
+                except UnicodeDecodeError:
+                    continue
+                except Exception:
+                    continue
+            return False, "Unable to decode CSV file."
+
+        elif filename.endswith(('.xls', '.xlsx')):
+            try:
+                file.seek(0)
+                df = pd.read_excel(file)
+                if df.empty:
+                    return False, "File is empty."
+                file.seek(0)
+                return True, "File is valid."
+            except Exception as e:
+                return False, f"Invalid Excel file: {str(e)}"
+
+        elif filename.endswith('.json'):
+            try:
+                file.seek(0)
+                df = pd.read_json(file)
+                if df.empty:
+                    return False, "File is empty."
+                file.seek(0)
+                return True, "File is valid."
+            except Exception as e:
+                return False, f"Invalid JSON file: {str(e)}"
+        
+        else:
+            return False, "Unsupported file type. Please upload CSV, Excel, or JSON."
+
+    except Exception as e:
+        return False, f"Validation error: {str(e)}"
+    finally:
+        # Always reset pointer
+        file.seek(0)
 
 def determine_report_type(df):
     """
