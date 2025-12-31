@@ -33,3 +33,49 @@
         opacity: 1;
     }
 }
+
+@media print {
+    body {
+        background: white !important;
+        background-image: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Force all backgrounds to be white or transparent */
+    div, section, article, main, header, footer {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        background-image: none !important;
+    }
+
+    /* Exceptions: The report content itself usually needs to be visible, 
+       but we want it to blend with the white page */
+    #report-content {
+        background-color: white !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important; /* Simple margin/padding as requested */
+        color: black !important;
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide anything that is explicitly marked as print:hidden (Tailwind does this, but good to be safe) */
+    .print\:hidden {
+        display: none !important;
+    }
+
+    /* Hide any keyframe animations during print */
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    /* Ensure text is black */
+    p, h1, h2, h3, h4, h5, h6, li, span, div {
+        color: #000 !important;
+    }
+}

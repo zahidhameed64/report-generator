@@ -11,3 +11,7 @@ dist/
 
 # User specific
 .vscode/
+
+# Generated content
+backend/static/plots/
+backend/uploads/

@@ -13,14 +13,14 @@ def generate_narrative(summary_stats, instruction=""):
     try:
         genai.configure(api_key=api_key)
         
-        # Priority: 2.0 Flash Exp -> 2.0 Flash -> 2.0 Flash Lite -> 2.5 Flash
-        # We are casting a wide net to find ANY model with remaining free quota.
+        # Priority: 2.5 Flash Lite -> Flash Lite Latest -> Exp 1206 -> 2.0 Lite
+        # Prioritizing "Lite" models which have separate quotas from main Flash/Pro models.
         models_to_try = [
-            'gemini-2.0-flash-exp', 
-            'gemini-2.0-flash',
+            'gemini-2.5-flash-lite',
+            'gemini-flash-lite-latest',
+            'gemini-exp-1206',
             'gemini-2.0-flash-lite-preview-02-05',
-            'gemini-2.5-flash',
-            'gemini-flash-latest'
+            'gemini-2.0-flash-exp'
         ]
         
         prompt = f"""
@@ -45,22 +45,25 @@ def generate_narrative(summary_stats, instruction=""):
         - The "Big Picture" take-away.
         
         ## 2. Deep Dive: Metrics & Distributions
-        - Analyze numeric trends (Mean, Median, Std Dev, Outliers).
-        - Analyze categorical patterns (Top Categories, Dominant Countries/Groups).
-        - Highlight the "Superstars" vs "Long Tail" (skewness).
+        *Important*: For each key metric, provide a "Visual Analysis" description as if describing the chart to a stakeholder.
+        
+        - **Numeric Trends**: Describe the shape of the distribution (Normal, Skewed? Long tail?). Mention mean vs median.
+        - **Categorical Patterns**: Describe the dominance of top categories. (e.g., "The chart shows a clear preference for X...").
+        - **Key Callouts**: Highlight "Superstars" (outliers) vs "Long Tail".
         
         ## 3. Correlation & Logic Analysis
-        - Interpret the correlations (e.g., "Earnings generally track with Views").
-        - Identify any surprising or counter-intuitive relationships.
+        - Interpret the correlations shown in the matrix.
+        - Explain *why* these variables might be related.
         
         ## 4. Strategic Implications & Opportunities
         - **Crucial Section**: What does this mean for a business or creator?
         - Suggest actionable next steps (e.g., "Focus on X category", "Expand to Y region").
         
         STRICT RULES:
-        - Do NOT use conversational fillers ("Here is the report..."). Start with headers.
-        - Do NOT invent numbers. Use the provided Stats only.
-        - Be insightful, not just descriptive. asking "Why?" implies looking for reasons in the data logic.
+        - Do NOT use conversational fillers.
+        - Do NOT invent numbers.
+        - Do NOT simply list headers like "Distribution of X" without text. Write full sentences or bullet points analyzing the data.
+        - Assume the user can see the charts; your job is to explain *what they show*.
         """
         last_error = None
         for model_name in models_to_try:
@@ -91,10 +94,10 @@ def chat_with_data(history, stats):
 
     # List of models to try in order of preference/cost/speed
     models_to_try = [
-        'gemini-2.0-flash-exp', 
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite-preview-02-05',
-        'gemini-2.5-flash'
+        'gemini-2.5-flash-lite',
+        'gemini-flash-lite-latest',
+        'gemini-exp-1206',
+        'gemini-2.0-flash-lite-preview-02-05'
     ]
     
     last_error = None

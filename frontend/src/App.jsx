@@ -251,35 +251,45 @@ function App() {
                                                 if (!report || !plots) return report;
                                                 let injectedReport = report;
 
-                                                // Inject Correlation Plot
+                                                // 1. Inject Correlation Matrix (After Header 3)
+                                                // Capture full line (.*) to avoid breaking headers like "## 3. Correlation & Logic"
                                                 const corrPlot = plots.find(p => p.type === 'correlation');
                                                 if (corrPlot) {
                                                     injectedReport = injectedReport.replace(
-                                                        /(##\s*3\.\s*Correlation)/i,
+                                                        /(##\s*3\.\s*Correlation.*)/i,
                                                         `$1\n\n![Correlation Matrix](${corrPlot.url})\n\n`
                                                     );
                                                 }
 
-                                                // Inject Distribution Plots (under Deep Dive)
+                                                // 2. Inject Distribution Plots (After Header 2 - Start of Deep Dive)
                                                 const distPlots = plots.filter(p => p.type === 'distribution');
                                                 if (distPlots.length > 0) {
                                                     const imgs = distPlots.map(p => `![${p.title}](${p.url})`).join('\n\n');
                                                     injectedReport = injectedReport.replace(
-                                                        /(##\s*2\.\s*Deep Dive)/i,
+                                                        /(##\s*2\.\s*Deep Dive.*)/i,
                                                         `$1\n\n${imgs}\n\n`
                                                     );
                                                 }
 
-                                                // Inject Category Plots (under Strategic or end of Deep Dive)
+                                                // 3. Inject Category Plots (Before Header 3 - End of Deep Dive)
+                                                // This places them at the bottom of the "Deep Dive" section, creating better flow
                                                 const catPlots = plots.filter(p => p.type === 'category');
                                                 if (catPlots.length > 0) {
                                                     const imgs = catPlots.map(p => `![${p.title}](${p.url})`).join('\n\n');
-                                                    // Try to put it after distributions or just append to Deep Dive
-                                                    // Let's append to Deep Dive to keep it together
-                                                    injectedReport = injectedReport.replace(
-                                                        /(##\s*2\.\s*Deep Dive)/i,
-                                                        `$1\n\n${imgs}\n\n`
-                                                    );
+                                                    // Look for Header 3 again to insert *before* it
+                                                    // If Header 3 is missing, fall back to appending to Header 2
+                                                    if (injectedReport.match(/##\s*3\.\s*Correlation/i)) {
+                                                        injectedReport = injectedReport.replace(
+                                                            /(##\s*3\.\s*Correlation)/i,
+                                                            `\n\n${imgs}\n\n$1`
+                                                        );
+                                                    } else {
+                                                        // Fallback: append to Deep Dive header if Correlation is missing
+                                                        injectedReport = injectedReport.replace(
+                                                            /(##\s*2\.\s*Deep Dive.*)/i,
+                                                            `$1\n\n${imgs}\n\n`
+                                                        );
+                                                    }
                                                 }
 
                                                 return injectedReport;
