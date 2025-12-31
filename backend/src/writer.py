@@ -82,9 +82,11 @@ def chat_with_data(history, stats):
         return "Error: API Key missing."
 
     # List of models to try in order of preference/cost/speed
-    models_to_try = ['gemini-1.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-pro']
+    # Removed gemini-pro (404 deprecated)
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-pro-latest']
     
     last_error = None
+    import time
     
     for model_name in models_to_try:
         try:
@@ -113,8 +115,9 @@ def chat_with_data(history, stats):
             return response.text
             
         except Exception as e:
-            print(f"DEBUG: Chat model {model_name} failed: {e}")
+            print(f"DEBUG: Chat model {model_name} failed: {str(e)}")
             last_error = e
+            time.sleep(1) # Wait a bit before trying next model
             continue
 
-    return f"Sorry, I am currently overloaded (Rate Limit). Please try again in a few seconds. (Error: {str(last_error)})"
+    return f"Sorry, I am currently overloaded (Rate Limit). Please try again in 5-10 seconds. (Error: {str(last_error)})"
