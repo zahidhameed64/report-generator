@@ -1,6 +1,14 @@
 # DataNarrator
 
-A web application that generates narrative reports from CSV data using Google Gemini AI.
+A web application that generates narrative reports from **CSV, Excel, and JSON** data using Google Gemini AI.
+
+## Architecture
+
+The system implements a modular, "agentic" workflow pattern:
+
+*   **The Brain**: The orchestration and validation agent. Validates file integrity and determines the analysis context (e.g., Time Series vs. General Performance).
+*   **The Analyst**: The data science agent. Handles "hard skills" like statistical computation, correlation analysis, and data cleaning using Pandas.
+*   **The Writer**: The creative agent. Synthesizes the statistical insights into a human-readable narrative using Google Gemini.
 
 ## Prerequisites
 
@@ -45,6 +53,6 @@ npm run dev
 
 ## Usage
 1. Open the frontend URL (http://localhost:5173).
-2. Upload a CSV file (e.g., `sample_sales_data.csv`).
+2. Upload a data file (**CSV, Excel .xlsx, or JSON**).
 3. View the analysis stats.
 4. Click "Generate Narrative Report".
