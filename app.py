@@ -7,13 +7,13 @@ load_dotenv()
 
 # Page config
 st.set_page_config(
-    page_title="Data-to-Narrative Report Generator",
+    page_title="DataNarrator",
     page_icon="📊",
     layout="wide"
 )
 
 def main():
-    st.title("📊 Data-to-Narrative Automated Report Generator")
+    st.title("📊 DataNarrator")
     st.markdown("""
     Upload your CSV data and let the AI generate a comprehensive narrative report.
     """)

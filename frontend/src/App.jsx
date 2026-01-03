@@ -85,7 +85,7 @@ function App() {
                         <span className="text-sm font-semibold text-purple-700 tracking-wide uppercase">AI-Powered Analytics</span>
                     </div>
                     <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 tracking-tight pb-2">
-                        Data-to-Narrative
+                        DataNarrator
                     </h1>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                         Transform raw CSV data into compelling business narratives instantly using the power of Gemini AI.

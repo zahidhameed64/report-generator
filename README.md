@@ -1,4 +1,4 @@
-# Data-to-Narrative Report Generator
+# DataNarrator
 
 A web application that generates narrative reports from CSV data using Google Gemini AI.
 

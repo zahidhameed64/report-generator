@@ -4,7 +4,7 @@ if (-not (Test-Path "backend\server.py")) {
     exit 1
 }
 
-Write-Host "=== Data-to-Narrative Setup & Run Script ===" -ForegroundColor Cyan
+Write-Host "=== DataNarrator Setup & Run Script ===" -ForegroundColor Cyan
 
 # 1. Setup Backend
 Write-Host "`n[1/4] Setting up Backend..." -ForegroundColor Yellow
